@@ -142,6 +142,7 @@ Daca rulam cu & la sfarsit -> nu se asteapta incheierea comenzii
 ##
 
 # Curs 4 - Multitasking
+
 **Proces:** un program caruia i se ataseaza un context de executie
 **Schimbare de context:** salvarea informatiilor procesului anterior intr-o zona din OS si restaurarea informatiilor noului proces
 Schimbarea de context inseamna **overhead** si se poate produce:
@@ -176,3 +177,61 @@ Cuanta de timp se asociaza unui proces in planificatoare preemptive
 **cuanta mare** -> schimbari de context mai rare, **productivitate sporita**
 **cuanta mica** -> schimbari de context mai dese, **echitate sporita**
 
+##
+
+# Curs 5 - Gestiunea memoriei
+
+Procesul preia date din memorie sau din I/O -> le prelucreaza -> le stocheaza inapoi in memorie sau I/O
+**Ciclu executie:** instruction fetch -> instruction decode -> data fetch -> execution -> data writeback
+Memoria este legata de procesor/procesoare prin magistrala bus (**FSB:** Front Side Bus): **magistrala de date** si **magistrala de adrese**
+
+**Citirea din memorie:**
+1. procesorul plaseaza adresa (indexul) pe magistrala de adrese
+2. trimite mesajul de read
+3. asteapta plasarea informatiei pe magistrala de date de unitate de memorie
+4. citeste informatia de pe magistrala de date
+
+**Scrierea in memorie:**
+1. procesorul plaseaza adresa pe magistrala de adrese si informatia pe magistrala de date
+2. trimite mesajul de scriere
+3. asteapta ca unitatea de memorie sa ia informatia si sa o scrie in memorie la adresa indicata
+
+### Internele memoriei
+Static and dynamic memory
+RAM, ROM (PROM, EPROM, EEPROM)
+**Latency** refers to the delay before data transfer begins following an instruction. 
+**Bandwidth** is the amount of data that can be transmitted in a given time.
+**Frequency** indicates how often the memory can perform operations per second.
+
+### Memoria Cache
+**Cache memory** is a small, fast memory (often inside the CPU) that stores copies of frequently used data so future requests can be served faster than going to RAM
+
+### Spatiul virtual de adrese al unui proces
+**Este unic pentru fiecare proces**
+Spatiul virtual ocupa 2^32 octeti (4GiB) pe sistem de 32 biti
+
+### Segmentare vs Paginare si Tabela de Pagini
+**Segmentare (Legacy):** compartimentarea spatiului virtual de adrese in zone (precum text, heap, stiva) si asocierea fiecarei zone la spatiul fizic
+**Paginare:** compartimentarea spatiului virtual al fiecarui proces si al spatiului fizic al sistemului in componente de dimensiune fixa, numite pagini: **pagini virtuale (pages)** si **pagini fizice (frames)**
+**Tabela de pagini:**
+A Page Table is a vital part of a computer’s memory management system. It acts like a guide for the CPU, translating the virtual addresses used by programs into actual physical addresses in RAM. 
+This ensures that each process can access its own memory safely and efficiently, without interfering with other processes.
+1. The operating system (OS) maintains a page table for each process, and the **Memory Management Unit (MMU)** uses it to automatically handle address translation. 
+2. The page number from a virtual address acts as an index into the table, and each row—called a **Page Table Entry (PTE)** stores the mapping to physical memory.
+
+### Tabela de pagini ierarhica
+Are mai multe niveluri (4-5) pt sistemele pe 64 biti
+Daca o zona lipseste, intrarea in page directory este nevalida si nu refera page table
+**Avantaj:** spatiu redus
+**Dezavantaj:** mai mult overhead de translatare
+
+### Translation Lookaside Buffers (TLB)
+Combate dezavantajul overhead-ului de translatare (nevoie de acces la memorie)
+este nevoie de TLB flush la address space switch, când se schimbă tabelele de pagini
+O operație cu memoria înseamnă un acces la tabela de pagini (în memoria fizică) pentru extragerea mapării și apoi un acces la memoria efectivă pentru extragerea informației (2 accese)
+Pentru a reduce overhead-ul, TLB reține cele mai recent accesate intrări în tabela de pagini; este un cache
+are 128-256 intrări cu cele mai recente mapări
+
+##
+
+# Curs 6 - Memoria Virtuala

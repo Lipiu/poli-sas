@@ -235,3 +235,38 @@ are 128-256 intrări cu cele mai recente mapări
 ##
 
 # Curs 6 - Memoria Virtuala
+
+Un proces are un spatiu virtual de adrese propriu\
+Adresele virtuale sunt asociate cu adresele fizice prin intermediul **mecanismului de memorie**, la nivel de pagini\
+**Zone de memorie virtuala:**
+- alocate static (la load time): cod/text, rodata, data, /, biblioteci
+- alocate dinamic (la runtime): biblioteci, stiva, heap
+
+**load time:** momentul in care un proces este pornit, lansarea in executie, cnad se foloseste ./a.out in cmd\
+**runtime:** momentul in care procesul ruleaza, se afla deja in executie; bibliotecile se incarca dinamic cu apeluri de tip **dlopen(POSIX)** sau **LoadLibrary(Windows)**\
+
+**Memorie partajata:**\
+- Doua sau mai multe procese pot partaja pagini de memorie
+- Intrarile din fiecare tabela de pagini refera aceeasi pagina fizica
+- Paginile virtuale pot diferi
+
+**copy-on-write:**
+- imediat după fork() fiecare spațiu virtual (al procesului părinte și al procesului copil) referă același spațiu fizic; nu se alocă spațiu fizic suplimentar (în afară de cel pentru noua tabelă de pagini)
+- rezolva problema fork() exec(), unde duplicarea fork() era degeaba deoarece apelul exec() inlocuia tot spatiul virtual si fizic
+
+**swapping:**
+- zona din memoria secundara (zona persistena) folosita ca suport de stocare a paginilor
+- atunci cand nu exista pagina fizica disponibila, se alege o pagina fizica si se evacueaza in spatiul de swap: **swap out**
+
+**algoritmi de inlocuire de pagini:**
+- paginile au un dirty bit care spune ca a fost modificata
+- se prefera paginile care au fost cel mai putin recent utilizate
+- thrashing (operatii dese de swap out / swap in) care consuma timp
+
+**Maparea fisierelor:**
+- scrierea intr-o pagina virtuala conduce la scrierea in blocul corespunzator de pe disc al procesului
+- are loc uzual pt fisiere executabile si biblioteci partajate
+- **pmap** - arata numele fisierelor
+- **lsof** si vizualizarea zonelor de tip txt
+- avantaje: overhead scazut temporal si spatial
+- dezavantaj: fisierele trebuie sa aiba dimensiunea stiuta pt mapare, nu se poate creste dimensiunea

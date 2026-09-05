@@ -616,12 +616,14 @@ Un thread se poate termina:
 
 Pentru a aștepta terminarea unui thread se folosește join, similar cu wait pentru procese.
 ### Kernel-level vs. User-level threads
-Kernel-level	User-level\
-Suportate de sistemul de operare	Implementate în user space\
-Sunt planificate de kernel	Planificatorul este în user space\
-Pot rula simultan pe mai multe core-uri	Nu necesită suport în kernel\
-Potrivit pentru CPU intensive	Activare foarte rapidă, bune pentru I/O intensive\
-Schimbarea de context implică kernel-ul	Schimbarea poate fi mai rapidă
+| Kernel-level | User-level |
+|---|---|
+| Suportate de sistemul de operare | Implementate în user space |
+| Sunt planificate de kernel | Planificatorul este în user space |
+| Pot rula simultan pe mai multe core-uri | Nu necesită suport în kernel |
+| Potrivite pentru CPU intensive | Activare foarte rapidă, bune pentru I/O intensive |
+| Schimbarea de context implică kernel-ul | Schimbarea poate fi mai rapidă |
+
 
 ##
 

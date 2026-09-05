@@ -270,3 +270,117 @@ Adresele virtuale sunt asociate cu adresele fizice prin intermediul **mecanismul
 - **lsof** si vizualizarea zonelor de tip txt
 - avantaje: overhead scazut temporal si spatial
 - dezavantaj: fisierele trebuie sa aiba dimensiunea stiuta pt mapare, nu se poate creste dimensiunea
+
+##
+
+# Curs 7 - Analiza executabilelor si proceselor
+
+### Analiza statica si dinamica
+- **Analiza statica:** analiza pe program fara ca acesta sa ruleze
+- **Analiza dinamica:** are loc in momentul rularii in proces si are ca tinta principala procesul si resursele folosite de acesta: memorie, registre, fisiere, syscalls, execution flow
+
+- Motive pt folosirea analizei statice/dinamice (3 motive)
+    - 1. testare/validare/depanare aplicatie
+    - 2. imbunatatirea unei aplicatii: analiza consum resurse, zonelor critice, imbunatatiri latenta, viteza, dimensiune
+    - 3. intelegerea functionarii unei aplicatii
+
+**Avantaj analiza statica:** privirea completa a programului\
+**Dezavantaj analiza statica:** lipsa de focus, nu se poate construi un flux de executie al programului\
+**Avantaj analiza dinamica:** precisa, urmareste un flux de executie cert\
+**Dezavantaj analiza dinamica:** nu are o privire in ansamblu si nu poate acoperi toate cazurile\
+
+### Proces de compilare
+- compilare program: cod sursa -> limbaj de asamblare
+- asamblare program: limbaj de asamblare -> modul / cod obiect
+- legare (linking): module obiect + biblioteci -> **executabil**
+- incarcarea programului: executabil -> proces
+
+### Interpretare
+În cazul interpretării, interpretorul este un executabil existent care este încărcat. În cadrul acestui proces se interpretează codul sursă.
+
+### Fisiere obiect si fisiere executabile
+**Fisier obiect:** relocabil, fara main, referinte nerezolvate catre simboluri externe\
+**Fisier executabil:** obtinut dupa linking, contine main, are referinte rezolvate, are adrese stabilite
+**Asemanari:** fisier obiect/executabil: acelasi format (ELF, PE, Mach-O, COFF): header, date, cod, simboluri
+
+### Legare (Linking)
+
+    Linker-ul combină module obiect + biblioteci → executabil.
+    Face:
+        comasarea secțiunilor (.text, .data etc.)
+        atribuirea adreselor simbolurilor
+        rezolvarea referințelor
+        stabilirea entry point-ului (_start → main)
+
+**Static vs. Dynamic**
+
+    Static linking: toate bibliotecile și referințele sunt incluse/rezolvate la link time.
+            portabil
+            pornire mai rapidă
+        − executabil mai mare, consum mai mare de memorie
+    Dynamic linking: bibliotecile sunt încărcate și referințele rezolvate la load time.
+            executabil mai mic
+            bibliotecile pot fi partajate între procese
+        − pornire mai lentă
+        − depinde de existența versiunilor compatibile ale bibliotecilor
+    Linux: bibliotecile dinamice = shared objects (.so).
+
+**Analiză statică**
+
+Se face fără rularea programului:
+
+    dezasamblare
+    simboluri și adrese
+    șiruri
+    entry point
+    call graph
+    biblioteci necesare
+    simboluri importate/exportate
+
+Unelte: objdump, readelf, nm, strings, ldd, radare2, IDA, Ghidra.
+Loading → Proces
+
+**Loader-ul:**
+
+    mapează executabilul în memoria virtuală
+    încarcă .text, .rodata, .data, .bss
+    pregătește stiva, argc, argv și variabilele de mediu
+    începe execuția de la entry point
+
+La executabile dinamice, încarcă și bibliotecile necesare.
+
+Bibliotecile/zonele read-only (.text, .rodata) pot fi partajate între procese.
+
+Bibliotecile pot fi încărcate și la runtime:
+
+    Linux: dlopen() / dlclose()
+    Windows: LoadLibrary() / FreeLibrary()
+    util pentru plugin-uri
+
+**Analiză dinamică**
+
+Se face în timpul execuției unui proces:
+
+    breakpoint + stepping
+    inspectare/modificare memorie și registre
+    urmărirea execuției (tracing)
+    inspectarea resurselor
+    instrumentare
+
+Unelte:
+
+    Debugger: GDB, LLDB, WinDbg
+    Instrumentare: Valgrind, AddressSanitizer, Intel Pin
+    Profilare: perf, gcov, Intel VTune
+    Tracing: strace, ltrace, ftrace, Dtrace
+
+**Fluxul complet**
+
+Cod sursă → compilator → asamblare → cod mașină → linker → executabil → loader → proces → runtime
+
+Static = analizezi fișierul.
+Dynamic = analizezi programul în execuție.
+
+##
+
+# Curs 8 - securitatea memoriei

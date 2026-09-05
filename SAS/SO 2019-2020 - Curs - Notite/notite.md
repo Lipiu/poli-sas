@@ -384,3 +384,158 @@ Dynamic = analizezi programul în execuție.
 ##
 
 # Curs 8 - securitatea memoriei
+
+### Securitatea sistemului
+
+    Sistem sigur = funcționează conform specificațiilor.
+    Bug = funcționare greșită.
+    Vulnerabilitate = bug exploatabil de atacator.
+    Exploit = metodă de exploatare a unei vulnerabilități.
+    Atacatorul urmărește: furt de informații, DoS sau controlul sistemului.
+
+### Securitatea memoriei
+
+    Se ocupă de protejarea citirii/scrierii datelor și executării codului.
+    Atacurile urmăresc de obicei modificarea fluxului de execuție (control flow hijack).
+    Vulnerabilități comune:
+        Buffer overflow
+        Index out of bounds
+
+### Control Flow Graph (CFG)
+
+    Nod = basic block (secvență liniară de instrucțiuni).
+    Arc = salt/branch.
+    Atacul poate:
+        adăuga/modifica arce → code reuse
+        adăuga cod nou → code injection
+
+### Zone de memorie
+
+    R-X → cod (.text)
+    R-- → date constante (.rodata)
+    RW- → .data, .bss, heap, stack
+    Executabilul conține .text, .rodata, .data, .bss.
+    Atacatorul vizează mai ales zonele RW, pentru suprascrierea datelor/code pointerilor.
+
+### Buffer Overflow
+
+    Buffer = zonă continuă de memorie cu adresă + dimensiune.
+    Buffer overflow = scriere peste limita bufferului.
+    Out of bounds = acces în afara limitelor (ex. index negativ sau prea mare).
+    Pot fi suprascrise date critice, inclusiv adresa de retur.
+    Stack buffer overflow → afectează stack-ul; heap buffer overflow → heap-ul.
+
+### Code Pointers
+
+Pointeri care conțin adrese de cod:
+
+    adresa de retur
+    function pointers
+
+### Suprascrierea lor poate redirecționa execuția:
+
+    Code injection → se execută cod nou injectat (shellcode).
+    Code reuse → se reutilizează cod existent din .text sau biblioteci.
+        Return-to-libc
+        ROP (Return-Oriented Programming)
+        JOP (Jump-Oriented Programming)
+
+### Shellcode
+
+    Cod mașină injectat pentru execuție.
+    De obicei combinat cu buffer overflow + suprascrierea unui code pointer.
+    Exemplu clasic: deschiderea unui shell.
+    Pentru execuție, memoria trebuie să fie writable + executable.
+
+### Protecții principale
+
+    Stack Canary / SSP → valoare între buffer și adresa de retur; detectează suprascrierea.
+    Safe Stack → code pointerii sunt separați de datele vulnerabile.
+    DEP / NX → zonele RW nu pot fi executate → blochează shellcode-ul.
+    ASLR → randomizează adresele heap/stack/biblioteci.
+    PIE → permite randomizarea și a zonelor executabilului.
+    CFI → verifică respectarea CFG și blochează fluxuri de execuție nepermise.
+    AddressSanitizer → detectează erori de memorie; util în dezvoltare/testare, dar cu overhead.
+
+### Ideea de reținut
+
+### Vulnerabilitate → exploit → control flow hijack → code injection / code reuse
+
+### Protecții:
+Canary + Safe Stack + DEP/NX + ASLR/PIE + CFI + sanitizers.
+
+##
+
+# Curs 9 - Fire de executie
+
+### Tipuri de acțiuni
+
+    I/O intensive → folosesc frecvent disc, rețea etc.
+    CPU intensive → folosesc intens procesorul.
+    O acțiune = input → procesare → output.
+
+### Procese vs. Thread-uri
+Procese
+
+    Un proces = program în execuție + spațiu de adrese + I/O + thread-uri.
+    Procesele pot rula în paralel pe mai multe core-uri.
+    Avantaje: izolare între procese.
+    Dezavantaje: mai multă memorie, creare și context switch mai costisitoare, partajarea datelor mai dificilă.
+
+### Thread-uri
+
+    Un proces poate avea mai multe thread-uri.
+    Thread-ul = unitatea de execuție/abstractizarea procesorului.
+    Thread-urile aceluiași proces partajează spațiul de adrese.
+    Au proprii:
+        registre
+        stack
+        Thread Local Storage (TLS)
+    Avantaje: creare rapidă, overhead mic, partajarea datelor simplă, bune pentru paralelizare.
+    Dezavantaje: lipsă de izolare → un thread poate corupe memoria celorlalte; necesită sincronizare; debugging mai dificil.
+
+### Thread: concepte esențiale
+
+    Definit printr-un TCB (Thread Control Block): TID, stare, stack, proces, timp de execuție, prioritate etc.
+    Execuția începe de la o funcție și primește o stivă proprie.
+    Se termină când:
+        funcția se încheie
+        procesul se încheie
+        se apelează pthread_exit()
+    join = așteaptă terminarea thread-ului și recuperează rezultatul.
+    Similar: wait() pentru procese.
+
+### Memorie partajată
+
+    Thread-urile aceluiași proces văd aceeași memorie.
+    O modificare făcută de un thread este vizibilă celorlalte.
+    Stack-ul și TLS-ul sunt proprii fiecărui thread.
+    Pentru acces sigur la date comune → sincronizare.
+
+### Implementarea thread-urilor
+**Kernel-level threads**
+
+    Gestionate și planificate de kernel.
+    Pot rula simultan pe mai multe core-uri.
+    Bune pentru CPU-intensive.
+    Context switch implică kernel-ul.
+
+**User-level threads**
+
+    Implementate în user-space, fără suport direct din kernel.
+    Activare rapidă și overhead mic.
+    Bune pentru I/O-intensive.
+    Un thread blocat poate bloca întreg procesul → se folosesc I/O asincrone.
+    Green threads / fibers = forme de user-level threads.
+    Thread pool = reutilizarea thread-urilor pentru reducerea costului de creare.
+
+### De reținut
+
+Proces = izolare + overhead mai mare
+Thread = partajare + overhead mic
+
+Proces → spațiu de adrese + I/O + unul sau mai multe thread-uri
+Thread → execuție (IP + SP + registre)
+
+Kernel threads → multi-core + CPU intensive
+User threads → rapide + I/O intensive

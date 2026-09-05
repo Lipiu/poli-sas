@@ -539,3 +539,590 @@ Thread → execuție (IP + SP + registre)
 
 Kernel threads → multi-core + CPU intensive
 User threads → rapide + I/O intensive
+
+##
+
+# Curs 10 - Sincronizare
+
+### Tipuri de acțiuni
+
+O acțiune presupune date de intrare → prelucrare → date de ieșire.
+
+    I/O intensive – folosesc predominant discul, rețeaua etc.
+    CPU intensive – folosesc predominant procesorul.
+
+### Procese
+
+Un proces este o abstractizare pentru executarea unei acțiuni și este planificat pe un procesor.
+
+Pe sisteme multi-core/multi-procesor putem:
+
+    executa mai multe acțiuni diferite în paralel;
+    executa aceeași acțiune în paralel, folosind mai multe procese.
+
+Dezavantaje ale proceselor:
+
+    consum mai mare de memorie;
+    partajarea datelor este mai dificilă;
+    crearea și schimbarea între procese au overhead mai mare.
+
+### Thread-uri
+
+Un thread (fir de execuție) este o variantă „lightweight” a procesului. Un proces poate avea unul sau mai multe thread-uri.
+
+Thread-ul reprezintă în principal contextul de execuție al procesorului:
+
+    instruction pointer;
+    stack pointer;
+    registre;
+    stivă proprie.
+
+Thread-urile din același proces partajează spațiul de adrese, ceea ce face comunicarea între ele rapidă și simplă.
+
+**Avantaje:**
+
+    creare mai rapidă;
+    consum redus de memorie;
+    schimbare de context mai rapidă;
+    partajarea datelor este simplă;
+    pot folosi mai multe core-uri.
+
+**Dezavantaje:**
+
+    izolare redusă: o eroare a unui thread poate afecta întreg procesul;
+    necesită sincronizare pentru accesul la date comune;
+    programele multithreaded sunt mai greu de depanat.
+
+### Memoria thread-urilor
+
+Thread-urile aceluiași proces partajează întreg spațiul de adrese.
+
+Fiecare thread are însă propria:
+
+    stivă (stack);
+    zonă TLS (Thread Local Storage);
+    stare și registre.
+
+Pentru acces corect la datele comune sunt necesare primitive de sincronizare.
+### Crearea și terminarea
+
+La crearea unui thread se specifică funcția pe care o va executa.
+
+Un thread se poate termina:
+
+    când se termină funcția sa;
+    când se termină procesul;
+    prin pthread_exit().
+
+Pentru a aștepta terminarea unui thread se folosește join, similar cu wait pentru procese.
+### Kernel-level vs. User-level threads
+Kernel-level	User-level\
+Suportate de sistemul de operare	Implementate în user space\
+Sunt planificate de kernel	Planificatorul este în user space\
+Pot rula simultan pe mai multe core-uri	Nu necesită suport în kernel\
+Potrivit pentru CPU intensive	Activare foarte rapidă, bune pentru I/O intensive\
+Schimbarea de context implică kernel-ul	Schimbarea poate fi mai rapidă
+
+##
+
+# Curs 11 - Dispozitive de intrare/iesire
+
+### Resursele unui sistem de calcul
+
+Cele 3 resurse principale sunt:
+
+    Procesorul (CPU) – prelucrarea datelor.
+    Memoria – păstrarea datelor și codului.
+    I/O – comunicarea cu exteriorul și cu alte procese.
+
+I/O poate însemna tastatură, mouse, monitor, disc, rețea, senzori, actuatori etc.
+### Cum funcționează I/O la nivel hardware
+
+Comunicarea urmează în general:
+
+CPU → magistrală → controller → dispozitiv
+
+    Controller-ul este cipul care controlează dispozitivul și conține registre pentru date, comenzi și stare.
+    CPU comunică cu aceste registre prin:
+        Memory-mapped I/O – registrele sunt mapate în spațiul de adrese fizice.
+        Port-mapped I/O – există un spațiu separat de adrese pentru I/O.
+    Memory-mapped I/O este metoda folosită cel mai frecvent.
+
+### Polling vs. întreruperi
+
+CPU trebuie să știe când dispozitivul este pregătit.
+
+    Polling – CPU verifică permanent starea controller-ului.
+        simplu, dar consumă CPU;
+        util la trafic foarte mare.
+    Întreruperi (interrupts) – controller-ul notifică CPU când are nevoie de atenție.
+        mai eficient pentru CPU;
+        preferat de obicei la trafic redus/normal.
+
+O întrerupere declanșează o ISR (Interrupt Service Routine) din kernel.
+### DMA
+
+DMA (Direct Memory Access) permite transferul unor blocuri mari de date între dispozitiv și memoria principală fără ca CPU să copieze fiecare dată.
+
+→ Scade încărcarea procesorului și crește performanța I/O.
+### Device drivers
+
+Un device driver este componenta kernelului care face legătura dintre sistemul de operare și dispozitiv.
+
+Primește:
+
+    cereri de la aplicații prin system calls (read(), write() etc.);
+    întreruperi de la hardware.
+
+Driverul traduce operațiile generale ale OS în comenzi specifice dispozitivului.
+### Niveluri intermediare
+
+Între aplicație și driver pot exista componente precum:
+
+    networking stack – gestionează protocoale precum IP/TCP;
+    filesystem – gestionează fișierele;
+    block I/O layer – gestionează accesul la disc.
+
+Buffer cache păstrează în RAM datele de pe disc pentru a evita accesul lent la disc.
+
+La citire se poate folosi read-ahead: sistemul aduce dinainte date care probabil vor fi folosite.
+### Interfața pentru aplicații
+
+Aplicațiile folosesc de obicei file descriptors pentru I/O.
+
+**Operațiile principale sunt:**
+
+    open() – deschide/resursează un descriptor;
+    read() – citește;
+    write() – scrie;
+    close() – închide;
+    seek() – schimbă poziția în dispozitive cu acces aleator;
+    ioctl() – operații specifice dispozitivului.
+
+În Linux, dispozitivele sunt de obicei în /dev/ și sunt identificate prin major + minor.
+### I/O și performanța
+
+**Operații sincrone și blocante (read/write)**
+
+    thread-ul așteaptă până când operația poate fi realizată;
+    simplu de programat, dar poate reduce performanța.
+
+**Operații non-blocante**
+
+    operația se întoarce imediat cu ceea ce este disponibil;
+    aplicația poate încerca din nou ulterior.
+
+**Operații asincrone**
+
+    aplicația trimite cererea și continuă să lucreze;
+    OS notifică ulterior finalizarea;
+    performanță bună, dar programare mai complicată.
+
+Pentru multe conexiuni/cereri se folosesc API-uri scalabile precum epoll (Linux).
+### Tehnici pentru reducerea overhead-ului
+
+    Scatter/Gather I/O – mai multe buffere sunt procesate printr-un singur system call.
+    Zero-copy – datele sunt transferate fără copii inutile între kernel și user space.
+
+##
+
+# Curs 12 - Implementarea sistemelor de fisiere
+
+### FCB / inode
+
+FCB (File Control Block) = metadata unui fișier. În sistemele Unix/Linux se numește de obicei inode.
+
+Conține:
+
+    identificatorul (inode number / ino);
+    permisiuni și proprietar;
+    timestamp-uri;
+    tipul fișierului;
+    dimensiunea;
+    pointeri către blocurile de date.
+
+**Important: FCB/inode nu conține numele fișierului.**
+### Dentry și hard link-uri
+
+Dentry (directory entry) asociază:
+nume fișier → inode
+
+Pot exista mai multe dentry-uri care indică același inode. Acestea sunt hard link-uri.
+
+    Hard link = dentry
+    Fișierul = inode + blocurile sale de date
+    rm / unlink() șterge un dentry, nu direct inode-ul.
+    Fișierul este eliminat efectiv când nu mai există hard link-uri către inode.
+
+### Directoare
+
+Un director este tot un fișier, dar blocurile sale de date conțin dentry-uri.
+
+Fiecare director are:
+
+    . → referință către el însuși;
+    .. → referință către directorul părinte.
+
+Un director cu N subdirectoare are în general N + 2 link-uri.
+
+Ierarhia sistemului de fișiere este construită prin urmărirea dentry-urilor pornind de la directorul rădăcină /.
+### Symbolic link
+
+Un symbolic link (symlink) este un inode al cărui conținut este o cale către alt fișier.
+
+    Symlink = inode care conține o cale
+    Hard link = dentry care indică un inode
+    Un symlink poate fi dangling dacă calea indicată nu mai există.
+    Symlink-urile pot indica fișiere de pe alte sisteme de fișiere; hard link-urile nu pot traversa sisteme de fișiere diferite.
+
+### Alte tipuri de fișiere
+
+Pe lângă fișierele obișnuite și directoare există:
+
+    symbolic links;
+    UNIX sockets;
+    FIFO/named pipes;
+    character devices;
+    block devices.
+
+### Gestionarea spațiului
+
+Sistemul de fișiere ține evidența:
+
+    inode-urilor ocupate/libere;
+    blocurilor de date ocupate/libere.
+
+De obicei folosește bitmap-uri:
+
+    0 = liber;
+    1 = ocupat.
+
+Când se creează un fișier:
+
+    se găsește un inode liber;
+    este marcat ca ocupat;
+    se completează inode-ul;
+    se alocă blocuri de date când este nevoie.
+
+### Structura pe disc
+
+Un sistem de fișiere conține în general:
+
+Superblock → inode map → data map → inode-uri → blocuri de date
+
+    Superblock – descrie structura sistemului de fișiere.
+    Inode map – evidențiază inode-urile ocupate.
+    Data map – evidențiază blocurile ocupate.
+    Inode-uri – metadata + pointeri către date.
+    Data blocks – conținutul efectiv al fișierelor.
+
+### Formatare și montare
+
+    Formatarea creează structura sistemului de fișiere și inode-ul rădăcină.
+    Montarea leagă inode-ul rădăcină al unui sistem de fișiere de un director din alt sistem de fișiere.
+    Sistemul de fișiere principal este montat în /.
+    Demontarea face sistemul de fișiere inaccesibil prin acel punct de montare.
+
+După o oprire bruscă pot apărea inconsistențe. fsck verifică și repară aceste probleme.
+### Descriptorul de fișier
+
+În lanțul de acces:
+
+file descriptor → structura fișierului deschis → FCB/inode → blocurile de date
+
+Descriptorul este un index în tabela de descriptori a procesului.
+
+##
+
+# Curs 13 - Networking in OS
+
+ChatGPT said:
+Rezumat – Interacțiunea hardware–OS și networking
+### NIC și comunicarea cu OS
+
+O placă de rețea (NIC) comunică cu sistemul de operare prin perechi de ring buffers RX/TX.
+
+    RX = primirea pachetelor.
+    TX = transmiterea pachetelor.
+    Comunicarea folosește memory-mapped I/O, întreruperi/polling și DMA.
+    DMA permite transferul pachetelor între NIC și memoria RAM fără ca CPU să copieze fiecare byte.
+
+La inițializare, OS alocă memoria pentru pachete și ring-uri și transmite NIC-ului adresele acestora.
+### Recepția unui pachet (RX)
+
+Fluxul esențial:
+
+NIC primește pachet → RX ring → DMA → memorie → notifică OS → stiva de networking
+
+Dacă nu există slot liber în RX ring, pachetul este drop-uit.
+
+OS este notificat prin:
+
+    întrerupere, la trafic normal;
+    polling, de obicei la trafic foarte mare.
+
+### Transmiterea unui pachet (TX)
+
+Fluxul este:
+
+Aplicație → kernel → IP/network stack → TX ring → DMA → NIC → rețea
+
+NIC copiază datele din memoria sistemului în bufferul său intern și apoi transmite pachetul.
+
+Placa poate face hardware offload, de exemplu:
+
+    calcularea checksum-ului;
+    TSO (TCP Segmentation Offload) – spargerea unui pachet mare în pachete mai mici;
+    calcularea FCS.
+
+### Mai multe cozi RX/TX
+
+NIC-urile moderne au mai multe perechi de cozi RX/TX.
+
+La recepție:
+
+    NIC folosește de obicei un hash pentru a decide coada RX;
+    cozile pot fi asociate unor core-uri diferite.
+
+→ Scopul principal este distribuirea traficului pe mai multe core-uri și creșterea performanței.
+### Procesarea în OS
+
+Când OS primește un pachet, verifică adresa IP destinație:
+
+    dacă este pentru sistemul local → intră în host/network stack;
+    dacă nu este local și există rutare → poate fi forwardat;
+    altfel → este drop-uit.
+
+Pentru un pachet local, OS trebuie să găsească socketul căruia îi aparține.
+
+Identificarea se face în principal folosind 5-tuple:
+
+IP sursă + port sursă + IP destinație + port destinație + protocol
+### UDP
+
+Pentru UDP:
+
+pachet → socket UDP → receive queue → recvfrom()
+
+Fiecare socket UDP are o coadă de pachete primite.
+
+    recvfrom() ia următorul pachet din coadă.
+    Dacă nu există pachete, procesul poate fi blocat până când apare unul.
+
+### TCP
+
+TCP are două tipuri importante de socket-uri:
+
+    listener – așteaptă conexiuni;
+    connection socket – reprezintă o conexiune TCP efectivă.
+
+Fluxul este:
+
+socket() → bind() → listen() → accept()
+
+Clientul folosește connect().
+
+La o conexiune nouă:
+
+    clientul trimite SYN;
+    serverul răspunde SYN/ACK;
+    clientul trimite ACK;
+    conexiunea devine disponibilă pentru accept().
+
+accept() returnează un nou socket de conexiune, în timp ce socketul listener continuă să accepte alte conexiuni.
+### TCP receive/send buffers
+
+Pentru fiecare conexiune TCP există buffere în kernel:
+
+    receive buffer – date primite de la rețea;
+    send buffer – date trimise de aplicație către kernel.
+
+recv() citește din receive buffer.
+
+Important: TCP livrează datele în ordine. Dacă există o „gaură” cauzată de un pachet pierdut, datele următoare nu sunt livrate aplicației până când pachetul lipsă nu este retransmis.
+
+send() nu înseamnă că datele au ajuns la destinație. Înseamnă că datele au fost copiate cu succes în bufferul TCP al kernelului.
+### UDP vs. TCP
+
+**UDP:**
+
+    sendto() → produce un pachet;
+    recvfrom() → primește un pachet;
+    fiecare pachet implică în general un system call.
+
+**TCP:**
+
+    send() copiază datele în send buffer;
+    kernelul decide când și cum le grupează în segmente;
+    recv() copiază datele din receive buffer;
+    TCP gestionează automat retransmisia, ordinea etc.
+
+### Performanță și offloading
+
+System call-urile sunt costisitoare, mai ales când se fac pentru fiecare pachet.
+
+Pentru TCP putem trimite/recepționa mulți bytes per system call, reducând overhead-ul.
+
+Problema este că rețeaua lucrează cu pachete, de obicei de aproximativ 1500 B, iar procesarea per pachet este costisitoare.
+
+De aceea se folosesc:
+
+    TSO – placa de rețea sparge segmente TCP mari în pachete.
+    GSO – kernelul face această segmentare.
+    LRO – combină mai multe pachete primite pentru a reduce numărul de operații.
+
+→ Toate reduc munca stivei de networking și cresc performanța.
+### Servere cu multe conexiuni
+
+Există trei modele principale:
+
+    1 proces / conexiune
+        izolare bună;
+        overhead mare.
+
+    1 thread / conexiune
+        mai eficient decât procesele;
+        multe thread-uri înseamnă totuși overhead și context switches.
+
+    1 thread/proces pentru mai multe conexiuni
+        folosește epoll pentru a detecta socket-urile pregătite pentru I/O;
+        poate folosi mai multe thread-uri pentru toate core-urile;
+        este mai eficient și scalabil;
+        programarea este mai complicată deoarece trebuie păstrată o stare pentru fiecare client.
+
+##
+
+# Curs 14 - Analiza performantei
+
+### Ce vrem să aflăm?
+
+Pentru un server, principalele criterii sunt:
+
+    Latenta – cât durează să răspundă la o cerere.
+    Throughput – câte cereri poate procesa pe secundă.
+
+Performanța depinde de:
+
+    numărul de clienți;
+    dimensiunea fișierelor;
+    distribuția cererilor;
+    hardware-ul serverului.
+
+### Identificarea bottleneck-ului
+
+Înainte de teste trebuie să estimăm ce componentă limitează performanța:
+
+    Storage (HDD) – cel mai lent; ~1–4 Gbps citire secvențială.
+    Rețeaua – 10 Gbps.
+    CPU – depinde de numărul de core-uri și de operațiile efectuate.
+
+Pentru serverul analizat:
+
+    ~60.000 fișiere;
+    dimensiune medie ~1,7 MB;
+    maxim 7 MB;
+    minim 32 KB.
+
+### Timpul de citire de pe HDD
+
+Timpul poate fi aproximat:
+
+**T = To + Ts + Size / Speed**
+
+unde:
+
+    To = overhead-ul constant;
+    Ts = timpul de seek al HDD-ului;
+    Size / Speed = timpul efectiv de citire.
+
+Cu hdparm se poate măsura viteza de citire.
+
+Pentru HDD-ul analizat:
+
+    viteza ≈ 200 MB/s;
+    seek ≈ 5 ms.
+
+Consecința importantă: dacă fiecare client cere un fișier diferit, seek-ul HDD-ului limitează puternic numărul de cereri.
+### HDD vs. buffer cache
+
+Dacă datele nu sunt în cache:
+
+    seek ≈ 5 ms;
+    un fișier mediu → ~11 ms;
+    aproximativ 100 cereri/s.
+
+Dacă datele sunt deja în buffer cache:
+
+    accesul este mult mai rapid (~2 ms pentru exemplul analizat);
+    HDD-ul nu mai este bottleneck;
+    devin importante CPU-ul, syscall-urile și rețeaua.
+
+Ideea esențială:
+
+Cache → CPU/rețea devin bottleneck
+Fără cache → HDD poate fi bottleneck
+### Rețeaua ca bottleneck
+
+Dacă serverul poate servi suficient de repede din cache, limita devine conexiunea de 10 Gbps.
+
+De exemplu, pentru fișiere mici, CPU-ul poate ajunge bottleneck înaintea rețelei; pentru fișiere mai mari, rețeaua poate deveni limita.
+### Testarea serverului
+
+Se compară implementări precum:
+
+    sendfile-server;
+    threaded-server.
+
+Testarea se face:
+
+    serial – un singur download la un moment dat;
+    parallel – mai mulți clienți simultan.
+
+Testarea serială poate fi înșelătoare: dacă clientul este bottleneck, diferențele dintre servere nu sunt relevante.
+
+La download paralel se poate observa mai bine capacitatea serverului.
+### Variabilitatea rezultatelor
+
+Când crește numărul de clienți:
+
+    throughput-ul crește;
+    la un moment dat rezultatele devin variabile.
+
+O cauză este contensionarea între procesele client și thread-urile serverului.
+
+Se poate folosi taskset pentru a pune serverul și clienții pe core-uri diferite.
+
+Dar această soluție poate modifica experimentul, deoarece nu mai testează utilizarea tuturor core-urilor.
+### Metodologia corectă de testare
+
+**Ordinea importantă este:**
+
+    Ce vreau să măsor?
+        latență;
+        throughput.
+
+    La ce nivel de încărcare?
+        câți clienți;
+        ce dimensiuni de fișiere;
+        ce distribuție a cererilor.
+
+    Aleg setup-ul
+        aceeași mașină;
+        rețea;
+        tipul de rețea relevant pentru scenariu.
+
+    Aleg workload generator-ul
+        open;
+        closed;
+        partly open.
+
+    Estimez bottleneck-ul înainte de experiment.
+
+    Rulez experimentul
+        schimb un singur parametru;
+        măsor rezultatul;
+        repet pentru ceilalți parametri importanți.
+
+    Vizualizez și verific rezultatele
+        dacă sunt credibile → experimentul este terminat;
+        dacă sunt suspecte → verific setup-ul sau metodologia și repet testul.
